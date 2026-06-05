@@ -8,6 +8,11 @@ import '../../domain/radio_tab.dart';
 import '../../state/radio_controller.dart';
 import 'glass.dart';
 
+const double _countrySearchSheetHeightFraction = 0.72;
+const double _countrySearchSheetKeyboardHeightFraction = 0.50;
+const double _countrySearchSheetMinHeight = 260;
+const double _countrySearchSheetTopGap = 24;
+
 class CountryFilter extends StatelessWidget {
   const CountryFilter({
     required this.controller,
@@ -173,14 +178,21 @@ class _CountrySearchSheetState extends State<_CountrySearchSheet> {
     final media = MediaQuery.of(context);
     final keyboardHeight = media.viewInsets.bottom;
     final keyboardOpen = keyboardHeight > 0;
-    final availableHeight = media.size.height -
-        keyboardHeight -
-        media.padding.top -
-        media.padding.bottom -
-        24;
-    final sheetHeight = keyboardOpen
-        ? availableHeight.clamp(260.0, media.size.height * 0.72)
-        : media.size.height * 0.72;
+    final maxSheetHeight = (media.size.height -
+            keyboardHeight -
+            media.padding.top -
+            media.padding.bottom -
+            _countrySearchSheetTopGap)
+        .clamp(0.0, media.size.height);
+    final minSheetHeight = maxSheetHeight < _countrySearchSheetMinHeight
+        ? maxSheetHeight
+        : _countrySearchSheetMinHeight;
+    final targetSheetHeight = media.size.height *
+        (keyboardOpen
+            ? _countrySearchSheetKeyboardHeightFraction
+            : _countrySearchSheetHeightFraction);
+    final sheetHeight =
+        targetSheetHeight.clamp(minSheetHeight, maxSheetHeight).toDouble();
     final query = _searchController.text.trim().toLowerCase();
     final filteredCountries = widget.countries.where((country) {
       if (query.isEmpty) {
@@ -190,127 +202,134 @@ class _CountrySearchSheetState extends State<_CountrySearchSheet> {
           country.code.toLowerCase().contains(query);
     }).toList();
 
-    return Container(
-      decoration: BoxDecoration(
-        color: c.surfaceElevated,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-        border: Border(top: BorderSide(color: c.border)),
-      ),
-      child: SafeArea(
-        child: Padding(
-          padding: EdgeInsets.only(
-            left: 20,
-            right: 20,
-            top: keyboardOpen ? 6 : 8,
-            bottom: keyboardOpen ? 8 : 16,
-          ),
-          child: SizedBox(
-            height: sheetHeight,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: <Widget>[
-                Center(
-                  child: Container(
-                    width: 36,
-                    height: 4,
-                    margin: EdgeInsets.only(bottom: keyboardOpen ? 8 : 12),
-                    decoration: BoxDecoration(
-                      color: isDark
-                          ? Colors.white.withValues(alpha: 0.30)
-                          : Colors.black.withValues(alpha: 0.18),
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                ),
-                Row(
-                  children: <Widget>[
-                    Expanded(
-                      child: Text(
-                        'Select Country',
-                        style: TextStyle(
-                          color: c.textPrimary,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 0,
-                        ),
+    return AnimatedPadding(
+      duration: const Duration(milliseconds: 180),
+      curve: Curves.easeOutCubic,
+      padding: EdgeInsets.only(bottom: keyboardHeight),
+      child: Container(
+        decoration: BoxDecoration(
+          color: c.surfaceElevated,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+          border: Border(top: BorderSide(color: c.border)),
+        ),
+        child: SafeArea(
+          bottom: !keyboardOpen,
+          child: Padding(
+            padding: EdgeInsets.only(
+              left: 20,
+              right: 20,
+              top: keyboardOpen ? 6 : 8,
+              bottom: keyboardOpen ? 8 : 16,
+            ),
+            child: SizedBox(
+              height: sheetHeight,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: <Widget>[
+                  Center(
+                    child: Container(
+                      width: 36,
+                      height: 4,
+                      margin: EdgeInsets.only(bottom: keyboardOpen ? 8 : 12),
+                      decoration: BoxDecoration(
+                        color: isDark
+                            ? Colors.white.withValues(alpha: 0.30)
+                            : Colors.black.withValues(alpha: 0.18),
+                        borderRadius: BorderRadius.circular(2),
                       ),
                     ),
-                    IconButton(
-                      tooltip: 'Close',
-                      onPressed: () => Navigator.of(context).pop(),
-                      icon: const Icon(Icons.close_rounded),
-                    ),
-                  ],
-                ),
-                SizedBox(height: keyboardOpen ? 8 : 12),
-                TextField(
-                  controller: _searchController,
-                  autofocus: true,
-                  textInputAction: TextInputAction.search,
-                  style: TextStyle(
-                    color: c.textPrimary,
-                    fontSize: 14,
                   ),
-                  cursorColor: c.textPrimary,
-                  decoration: glassInputDecoration(
-                    context: context,
-                    hintText: 'Search country',
-                    prefixIcon: Icons.search_rounded,
-                    suffixIcon: _searchController.text.isEmpty
-                        ? null
-                        : IconButton(
-                            tooltip: 'Clear search',
-                            onPressed: () {
-                              _searchController.clear();
-                              setState(() {});
-                            },
-                            icon: const Icon(Icons.close_rounded, size: 18),
+                  Row(
+                    children: <Widget>[
+                      Expanded(
+                        child: Text(
+                          'Select Country',
+                          style: TextStyle(
+                            color: c.textPrimary,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 0,
                           ),
-                  ),
-                  onChanged: (_) => setState(() {}),
-                ),
-                SizedBox(height: keyboardOpen ? 8 : 12),
-                _CountryOptionTile(
-                  title: 'For You',
-                  subtitle: 'Popular stations from your top genres',
-                  selected: widget.selectedCountry.isEmpty,
-                  onTap: () => Navigator.of(context).pop(''),
-                ),
-                SizedBox(height: keyboardOpen ? 4 : 6),
-                Expanded(
-                  child: filteredCountries.isEmpty
-                      ? Center(
-                          child: Text(
-                            'No countries found',
-                            style: TextStyle(
-                              color: c.textTertiary,
-                              fontSize: 13,
-                            ),
-                          ),
-                        )
-                      : ListView.separated(
-                          keyboardDismissBehavior:
-                              ScrollViewKeyboardDismissBehavior.onDrag,
-                          itemCount: filteredCountries.length,
-                          separatorBuilder: (_, __) => Divider(
-                            color: c.divider,
-                            height: 1,
-                          ),
-                          itemBuilder: (context, index) {
-                            final country = filteredCountries[index];
-
-                            return _CountryOptionTile(
-                              title: country.name,
-                              subtitle:
-                                  '${country.code} - ${country.stationCount} stations',
-                              selected: country.code == widget.selectedCountry,
-                              onTap: () =>
-                                  Navigator.of(context).pop(country.code),
-                            );
-                          },
                         ),
-                ),
-              ],
+                      ),
+                      IconButton(
+                        tooltip: 'Close',
+                        onPressed: () => Navigator.of(context).pop(),
+                        icon: const Icon(Icons.close_rounded),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: keyboardOpen ? 8 : 12),
+                  TextField(
+                    controller: _searchController,
+                    autofocus: true,
+                    textInputAction: TextInputAction.search,
+                    style: TextStyle(
+                      color: c.textPrimary,
+                      fontSize: 14,
+                    ),
+                    cursorColor: c.textPrimary,
+                    decoration: glassInputDecoration(
+                      context: context,
+                      hintText: 'Search country',
+                      prefixIcon: Icons.search_rounded,
+                      suffixIcon: _searchController.text.isEmpty
+                          ? null
+                          : IconButton(
+                              tooltip: 'Clear search',
+                              onPressed: () {
+                                _searchController.clear();
+                                setState(() {});
+                              },
+                              icon: const Icon(Icons.close_rounded, size: 18),
+                            ),
+                    ),
+                    onChanged: (_) => setState(() {}),
+                  ),
+                  SizedBox(height: keyboardOpen ? 8 : 12),
+                  _CountryOptionTile(
+                    title: 'For You',
+                    subtitle: 'Popular stations from your top genres',
+                    selected: widget.selectedCountry.isEmpty,
+                    onTap: () => Navigator.of(context).pop(''),
+                  ),
+                  SizedBox(height: keyboardOpen ? 4 : 6),
+                  Expanded(
+                    child: filteredCountries.isEmpty
+                        ? Center(
+                            child: Text(
+                              'No countries found',
+                              style: TextStyle(
+                                color: c.textTertiary,
+                                fontSize: 13,
+                              ),
+                            ),
+                          )
+                        : ListView.separated(
+                            keyboardDismissBehavior:
+                                ScrollViewKeyboardDismissBehavior.onDrag,
+                            itemCount: filteredCountries.length,
+                            separatorBuilder: (_, __) => Divider(
+                              color: c.divider,
+                              height: 1,
+                            ),
+                            itemBuilder: (context, index) {
+                              final country = filteredCountries[index];
+
+                              return _CountryOptionTile(
+                                title: country.name,
+                                subtitle:
+                                    '${country.code} - ${country.stationCount} stations',
+                                selected:
+                                    country.code == widget.selectedCountry,
+                                onTap: () =>
+                                    Navigator.of(context).pop(country.code),
+                              );
+                            },
+                          ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),

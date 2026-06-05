@@ -64,7 +64,8 @@ void main() {
 
 class _FakeAudioPlayerService implements AudioPlayerService {
   @override
-  Stream<PlayerState> get playerStateStream => const Stream<PlayerState>.empty();
+  Stream<PlayerState> get playerStateStream =>
+      const Stream<PlayerState>.empty();
 
   @override
   Stream<PlaybackEvent> get playbackEventStream =>
