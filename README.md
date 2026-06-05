@@ -140,7 +140,7 @@ Release documentation is in [docs/release_process.md](docs/release_process.md).
 Flutter versioning is controlled by `pubspec.yaml`:
 
 ```yaml
-version: 1.0.1+2
+version: 1.0.2+3
 ```
 
 Use this format:
@@ -152,7 +152,7 @@ versionName+versionCode
 Example:
 
 ```yaml
-version: 1.0.1+2
+version: 1.0.2+3
 ```
 
 Increase `versionCode` for every Android build intended for release.
